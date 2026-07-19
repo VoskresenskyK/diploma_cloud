@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import MainPage from './components/MainPage';
 import RegisterPage from './components/RegisterPage';
 import LoginPage from './components/LoginPage';
+import Dashboard from './components/Dashboard';
 import './App.css';
 
 export default function App() {
@@ -10,32 +11,21 @@ export default function App() {
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
-    setCurrentPage('dashboard'); // Перенаправляем внутрь сервиса после входа
+    setCurrentPage('dashboard');
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setCurrentPage('main');
   };
 
   return (
-    <div className="container">
-      {currentPage === 'main' && (
-        <MainPage onNavigate={setCurrentPage} />
-      )}
-
-      {currentPage === 'register' && (
-        <RegisterPage onNavigate={setCurrentPage} />
-      )}
-
-      {currentPage === 'login' && (
-        <LoginPage onNavigate={setCurrentPage} onLoginSuccess={handleLoginSuccess} />
-      )}
-
-      {currentPage === 'dashboard' && (
-        <div>
-          <h2>Личный кабинет облака</h2>
-          <p>Приветствуем вас в вашей рабочей панели!</p>
-          <button className="btn btn-secondary" onClick={() => { setUser(null); setCurrentPage('main'); }}>
-            Выйти
-          </button>
-        </div>
-      )}
+    // Если мы на странице dashboard, увеличиваем ширину контейнера стилем max-width: 950px
+    <div className="container" style={currentPage === 'dashboard' ? { maxWidth: '950px' } : {}}>
+      {currentPage === 'main' && <MainPage onNavigate={setCurrentPage} />}
+      {currentPage === 'register' && <RegisterPage onNavigate={setCurrentPage} />}
+      {currentPage === 'login' && <LoginPage onNavigate={setCurrentPage} onLoginSuccess={handleLoginSuccess} />}
+      {currentPage === 'dashboard' && <Dashboard user={user} onLogout={handleLogout} />}
     </div>
   );
 }
