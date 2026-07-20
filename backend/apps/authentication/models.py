@@ -1,31 +1,31 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.contrib.auth import get_user_model
-import os
-
-User = get_user_model()
 
 
-class UserFile(models.Model):
-    # Привязка к пользователю. При удалении пользователя удаляются и его файлы
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='files', verbose_name="Владелец")
+class CustomUser(AbstractUser):
+    # 'username' (логин), 'email' и 'password' уже есть внутри AbstractUser с правильными типами!
 
-    # Файл сохраняется локально. Путь будет определяться динамически
-    file = models.FileField(upload_data_to='uploads/', verbose_name="Файл")
-    filename = models.CharField(max_length=255, verbose_name="Имя файла")
-    comment = models.TextField(blank=True, null=True, verbose_name="Комментарий")
-    size = models.BigIntegerField(verbose_name="Размер в байтах")
+    # Полное имя пользователя (VARCHAR)
+    full_name = models.CharField(max_length=255, verbose_name="Полное имя")
 
-    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата загрузки")
-    last_downloaded_at = models.DateTimeField(blank=True, null=True, verbose_name="Дата последнего скачивания")
+    # Путь к хранилищу пользователя относительно общего пути (VARCHAR / TEXT)
+    storage_path = models.CharField(max_length=500, blank=True, null=True, verbose_name="Путь к хранилищу")
 
-    # Уникальный токен для генерации публичных ссылок без авторизации
-    share_token = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    # Признак администратора (BOOLEAN).
+    # В Django уже есть встроенное поле is_staff (доступ в админку) или is_superuser.
+    # Но мы можем продублировать или явно использовать кастомное поле, если это требуется по заданию:
+    is_admin = models.BooleanField(default=False, verbose_name="Признак администратора")
 
     def save(self, *args, **kwargs):
-        if not self.share_token:
-            import secrets
-            self.share_token = secrets.token_urlsafe(16)
+        # Автоматически проставляем признак админа, если пользователя делают суперюзером
+        if self.is_superuser:
+            self.is_admin = True
+
+        # Автоматическая генерация пути к хранилищу на основе логина (если путь еще не задан)
+        if not self.storage_path and self.username:
+            self.storage_path = f"user_{self.username}/"
+
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.filename} ({self.user.username})"
+        return self.username

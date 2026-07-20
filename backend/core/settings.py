@@ -134,7 +134,61 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-user-id',
+    'x-user-isadmin',
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
+# 1. Настройка базовой папки хранения файлов как параметра системы (по ТЗ)
+CLOUD_STORAGE_BASE_DIR = os.path.join(BASE_DIR, 'media', 'user_storages')
+MEDIA_ROOT = CLOUD_STORAGE_BASE_DIR
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# 2. Общие требования к серверу: Конфигурация логирования (DEBUG, INFO, WARNING, ERROR)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} [{asctime}] {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO', # Логируем общие события Django
+        },
+        'storage_app': { # Наш кастомный логгер для облака
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+# Настройки для локальной разработки без HTTPS (чтобы браузер не блокировал куки)
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
