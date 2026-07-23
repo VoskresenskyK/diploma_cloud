@@ -12,21 +12,28 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env(
+    DEBUG=(bool, False),  # Значение по умолчанию, если переменная не найдена
+)
+
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-f5983+)7vvjlr5+g3*4ec919p=#i!u=+mzker7xohh7xql39!r'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
 
 # Application definition
@@ -62,10 +69,11 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, '..', 'frontend', 'dist')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -83,11 +91,11 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Cloud_Space',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
+        'NAME': env('DB_NAME'),
+        'HOST': env('DB_HOST'),
+        'PORT': env.int('DB_PORT'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
     }
 }
 
@@ -126,13 +134,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/assets/'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, '..', 'frontend', 'dist'),
 ]
+
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS')
 
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -148,12 +156,11 @@ CORS_ALLOW_HEADERS = [
     'x-user-isadmin',
 ]
 
-CORS_ALLOW_CREDENTIALS = True
-
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
-# 1. Настройка базовой папки хранения файлов как параметра системы (по ТЗ)
-CLOUD_STORAGE_BASE_DIR = os.path.join(BASE_DIR, 'media', 'user_storages')
+# 1. Настройка базовой папки хранения файлов как параметра системы
+STORAGE_FOLDER = env('CLOUD_STORAGE_DIR_NAME', default='user_storages')
+CLOUD_STORAGE_BASE_DIR = os.path.join(BASE_DIR, 'media', STORAGE_FOLDER)
 MEDIA_ROOT = CLOUD_STORAGE_BASE_DIR
 MEDIA_URL = '/media/'
 
@@ -188,6 +195,7 @@ LOGGING = {
 }
 
 # Настройки для локальной разработки без HTTPS (чтобы браузер не блокировал куки)
+CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SAMESITE = 'Lax'

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import UsersTable from './UsersTable';
 
-const API_BASE_URL = `http://127.0.0.1:8000`;
+const API_BASE_URL = window.location.origin;
 
 export default function Dashboard({ user, onLogout }) {
   const currentUserId = user?.id ? String(user.id) : '';
@@ -17,13 +17,13 @@ export default function Dashboard({ user, onLogout }) {
   const [targetUserId, setTargetUserId] = useState(currentUserId);
   const [viewedUserLogin, setViewedUserLogin] = useState(currentUserLogin);
 
-  const headers = {
+  const headers = useMemo(() => ({
     'X-User-Id': String(user?.id || ''),
     'X-User-IsAdmin': user?.is_admin ? 'true' : 'false',
     'Content-Type': 'application/json'
-  };
+  }), [user]);
 
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     if (!targetUserId) return;
     try {
       const url = `${API_BASE_URL}/api/files/?user_id=${targetUserId}`;
@@ -37,10 +37,10 @@ export default function Dashboard({ user, onLogout }) {
     } catch (err) {
       console.error("Ошибка сети при загрузке файлов:", err);
     }
-  };
+  }, [targetUserId, headers]);
 
   // Метод для получения списка всех пользователей (только для админа)
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     if (!currentIsAdmin) return;
     try {
       const response = await fetch(`${API_BASE_URL}/api/users/`, {
@@ -52,14 +52,16 @@ export default function Dashboard({ user, onLogout }) {
         setUsersList(data.users || []);
       }
     } catch (err) { console.error("Ошибка при получении списка пользователей:", err); }
-  };
+  }, [currentIsAdmin, headers]);
 
   useEffect(() => {
     if (currentUserId) {
+      setTimeout(() => {
         fetchFiles();
         fetchUsers();
-      }
-  }, [targetUserId, currentUserId]);
+      }, 0);
+    }
+  }, [targetUserId, currentUserId, fetchFiles, fetchUsers]);
 
   const handleFileUpload = async (e) => {
     e.preventDefault();
@@ -179,45 +181,6 @@ export default function Dashboard({ user, onLogout }) {
   };
 
   // Надежное скачивание/просмотр с передачей сессионных кук по сети
-//   const handleViewFile = (id, filename) => {
-//     const downloadUrl = `${API_BASE_URL}/api/files/${id}/download/?download=1`;
-//
-//     fetch(downloadUrl, {
-//       headers: headers,
-//       credentials: 'include' // Принудительно передаем сессию, чтобы Django не выдавал 401
-//     })
-//       .then(res => {
-//         if (!res.ok) throw new Error("Ошибка доступа к файлу");
-//         return res.blob();
-//       })
-//       .then(blob => {
-//         // Создаем временную ссылку, принудительно задаем имя файла и кликаем
-//         const url = window.URL.createObjectURL(blob);
-//         const a = document.createElement('a');
-//         a.href = url;
-//         a.download = filename;
-//         document.body.appendChild(a);
-//         a.click();
-//         document.body.removeChild(a);
-//         window.URL.revokeObjectURL(url);
-//       })
-//       .catch(err => alert("Не удалось скачать файл. Возможно, сессия истекла."));
-//   };
-
-//    const handleViewFile = (id) => {
-//      fetch(`${API_BASE_URL}/api/files/${id}/download/`, { headers })
-//        .then(res => res.blob())
-//        .then(blob => {
-//          const fileURL = URL.createObjectURL(blob);
-//          window.open(fileURL, '_blank');
-//        });
-//    };
-
-//   const handleViewFile = (id) => {
-//     const viewUrl = `${API_BASE_URL}/api/files/${id}/download/?auth_user_id=${currentUserId}`;
-//     window.open(viewUrl, '_blank');
-//   };
-
   const handleViewFile = (id) => {
     // Формируем прямую ссылку на скачивание с передачей вашего ID
     const viewUrl = API_BASE_URL + '/api/files/' + id + '/download/?auth_user_id=' + currentUserId;
@@ -309,8 +272,28 @@ export default function Dashboard({ user, onLogout }) {
                       <td style={{ padding: '12px 10px', fontSize: '15px' }}><b>{file.filename}</b></td>
                       <td style={{ padding: '12px 10px', color: '#666', fontSize: '14px' }}>{file.comment || <span style={{color: '#bbb', fontStyle: 'italic'}}>нет</span>}</td>
                       <td style={{ padding: '12px 10px', fontSize: '14px' }}>{(file.size / 1024).toFixed(1)} КБ</td>
-                      <td style={{ padding: '12px 10px', fontSize: '13px', color: '#777' }}>{file.uploaded_at}</td>
-                      <td style={{ padding: '12px 10px', fontSize: '13px', color: '#777' }}>{file.last_downloaded_at}</td>
+                      <td style={{ padding: '12px 10px', fontSize: '13px', color: '#777' }}>
+                          {file.uploaded_at ? (
+                            new Date(file.uploaded_at + 'Z').toLocaleString('ru-RU', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          ) : '—'}
+                          </td>
+                      <td style={{ padding: '12px 10px', fontSize: '13px', color: '#777' }}>
+                            {file.last_downloaded_at && file.last_downloaded_at !== 'Не скачивался' ? (
+                              new Date(file.last_downloaded_at + 'Z').toLocaleString('ru-RU', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            ) : 'Не скачивался'}
+                          </td>
                       <td style={{ padding: '12px 10px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button onClick={() => handleViewFile(file.id)} style={{ padding: '4px 10px', cursor: 'pointer' }}>Просмотр</button>

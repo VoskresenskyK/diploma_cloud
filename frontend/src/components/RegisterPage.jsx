@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+
+const API_BASE_URL = window.location.origin;
 
 export default function RegisterPage({ onNavigate, onLoginSuccess }) {
   const [formData, setFormData] = useState({ login: '', fullname: '', email: '', password: '' });
@@ -50,7 +52,7 @@ export default function RegisterPage({ onNavigate, onLoginSuccess }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/register/`, {
+      const response = await fetch(`${API_BASE_URL}/api/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

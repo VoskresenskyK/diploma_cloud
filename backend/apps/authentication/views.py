@@ -29,11 +29,6 @@ def api_register(request):
         if User.objects.filter(email=email).exists():
             return JsonResponse({"error": "Пользователь с таким email уже существует"}, status=400)
 
-        # # Разделяем полное имя на Имя и Фамилию для Django модели
-        # name_parts = fullname.split(" ", 1)
-        # first_name = name_parts[0]
-        # last_name = name_parts[1] if len(name_parts) > 1 else ""
-
         # Создаем пользователя в базе данных
         user = User.objects.create_user(
             username=username,
@@ -50,7 +45,7 @@ def api_register(request):
         return JsonResponse({
             "status": "success",
             "message": "Пользователь успешно создан",
-            "storage_path": user.storage_path,  # Возвращаем сгенерированный путь для фронтенда
+            "storage_path": user.storage_path,
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -118,7 +113,6 @@ def users_list_api(request):
 
     data = []
     for u in users:
-        # Если у пользователя нет файлов, Sum('files__size') вернет None. Заменяем его на 0.
         size_in_bytes = u.total_size if u.total_size is not None else 0
 
         # Переводим размер в читаемый вид (КБ)
@@ -130,8 +124,8 @@ def users_list_api(request):
             "email": u.email,
             "fullname": u.full_name,
             "is_admin": u.is_admin,
-            "files_count": u.files_count,  # Количество файлов
-            "total_size_kb": size_in_kb  # Общий размер в КБ
+            "files_count": u.files_count,
+            "total_size_kb": size_in_kb
         })
 
     return JsonResponse({"users": data})
@@ -177,7 +171,6 @@ def delete_user_api(request, user_id):
 
     target_user = get_object_or_404(User, id=user_id)
 
-    # Проверка прав: либо ты админ, либо ты удаляешь сам себя
     if current_user.id != target_user.id and not current_user.is_admin:
         return JsonResponse({"error": "Нет прав на удаление этого пользователя"}, status=403)
 

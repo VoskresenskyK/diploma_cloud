@@ -22,15 +22,11 @@ def get_unique_upload_path(instance, filename):
 class UserFile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='files', verbose_name="Владелец")
     file = models.FileField(upload_to=get_unique_upload_path, verbose_name="Физический файл на диске")
-
-    # Поля по ТЗ
     filename = models.CharField(max_length=255, verbose_name="Оригинальное имя файла")
     size = models.BigIntegerField(verbose_name="Размер файла в байтах")
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата загрузки")
     last_downloaded_at = models.DateTimeField(blank=True, null=True, verbose_name="Последняя дата скачивания")
     comment = models.TextField(blank=True, null=True, verbose_name="Комментарий")
-
-    # Новые обязательные поля по ТЗ
     path_in_storage = models.CharField(max_length=500, blank=True, verbose_name="Путь к файлу в хранилище")
     share_token = models.CharField(max_length=100, unique=True, blank=True, null=True)
     special_link = models.CharField(max_length=500, blank=True, verbose_name="Специальная обезличенная ссылка")
@@ -39,7 +35,7 @@ class UserFile(models.Model):
         # Генерируем случайный токен для обезличенной ссылки
         if not self.share_token:
             self.share_token = secrets.token_urlsafe(24)
-            # Ссылка максимально обезличена: не содержит имени, хранилища и оригинального имени файла (по ТЗ)
+            # Ссылка максимально обезличена: не содержит имени, хранилища и оригинального имени файла
             self.special_link = f"http://127.0.0{self.share_token}/"
 
         super().save(*args, **kwargs)
