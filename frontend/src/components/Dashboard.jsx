@@ -176,15 +176,55 @@ export default function Dashboard({ user, onLogout }) {
   };
 
   const handleCopyLink = (url) => {
-    navigator.clipboard.writeText(url);
-    alert("Специальная ссылка скопирована!");
+    // Проверяем, доступен ли современный API буфера обмена
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(() => alert("Ссылка скопирована!"))
+        .catch(() => alert("Не удалось скопировать ссылку"));
+    } else {
+      // Резервный надежный способ для работы на http:// без HTTPS
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.style.position = "fixed"; // Избегаем прокрутки страницы
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        alert("Ссылка скопирована (резервный режим)!");
+      } catch (err) {
+        alert("Не удалось скопировать ссылку");
+      }
+      document.body.removeChild(textarea);
+    }
   };
 
   // Надежное скачивание/просмотр с передачей сессионных кук по сети
-  const handleViewFile = (id) => {
-    // Формируем прямую ссылку на скачивание с передачей вашего ID
+  const handleViewFile = (id, filename) => {
     const viewUrl = API_BASE_URL + '/api/files/' + id + '/download/?auth_user_id=' + currentUserId;
-    window.open(viewUrl, '_blank');
+
+    // Открываем новую пустую вкладку
+    const newWindow = window.open('', '_blank');
+
+    if (newWindow) {
+      // Записываем внутрь вкладки HTML-код с фреймом во весь экран
+      newWindow.document.write(`
+        <html>
+          <head>
+            <title>Просмотр: ${filename}</title>
+            <style>
+              body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f4f4f9; font-family: sans-serif; }
+              iframe { border: none; width: 100%; height: 100%; }
+            </style>
+          </head>
+          <body>
+            <iframe src="${viewUrl}"></iframe>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
+    } else {
+      alert("Браузер заблокировал всплывающее окно. Разрешите всплывающие окна для этого сайта.");
+    }
   };
 
   if (!user) {
@@ -296,7 +336,7 @@ export default function Dashboard({ user, onLogout }) {
                           </td>
                       <td style={{ padding: '12px 10px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
-                          <button onClick={() => handleViewFile(file.id)} style={{ padding: '4px 10px', cursor: 'pointer' }}>Просмотр</button>
+                          <button onClick={() => handleViewFile(file.id, file.filename)} style={{ padding: '4px 10px', cursor: 'pointer' }}>Просмотр</button>
                           <button onClick={() => handleRename(file.id, file.filename)} style={{ padding: '4px 10px', cursor: 'pointer' }}>Имя</button>
                           <button onClick={() => handleCopyLink(file.share_url)} style={{ padding: '4px 10px', cursor: 'pointer', background: '#e2e3e5', border: '1px solid #ccc' }}>Ссылка</button>
                           <button onClick={() => handleDelete(file.id)} style={{ padding: '4px 10px', cursor: 'pointer', color: 'white', backgroundColor: '#dc3545', border: 'none', borderRadius: '4px' }}>Удалить</button>
